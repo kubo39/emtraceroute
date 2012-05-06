@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 require 'socket'
 require 'eventmachine'
+require 'optparse'
 
 # extension for socket library
 class Socket
@@ -242,6 +243,9 @@ module Handler
     if @waiting
       @out_queue << Hop.new(@target, ttl.to_i)
     end
+
+  rescue
+    detach
   end
 
   def hop_timeout *ign
@@ -272,7 +276,7 @@ class TracerouteProtocol
 end
 
 def traceroute target, settings
-  tr = TracerouteProtocol.new('8.8.8.8', settings)
+  tr = TracerouteProtocol.new(target, settings)
 end
 
 
@@ -282,15 +286,46 @@ def main
     exit(1)
   end
 
+  defaults = {
+    "timeout" => 2,
+    "max_tries" => 3,
+  }
+
+  opts = {}
+
+  config = OptionParser.new
+  config.on("-t VAL", "--timeout VAL") do |v|
+    opts["timeout"] = v.to_i
+  end
+
+  config.on("-r VAL", "--tries VAL") do |v|
+    opts["tries"] = v.to_i
+  end
+
+  config.parse!(ARGV)
+  target = ARGV.last[0] != "-" ? ARGV.pop : nil
+
+  begin
+    unless target
+      raise OptionParser::InvalidArgument
+    end
+  rescue => ex
+    puts ex.message
+    exit(1)
+  end
+
+  settings = defaults.dup
+
+  if opts.include?("timeout")
+    settings["timeout"] = opts["timeout"]
+  end
+
+  if opts.include?("tries")
+    settings["max_tries"] = opts["tries"]
+  end
+
   EM.run do
-    defaults = {
-      "timeout" => 2,
-      "max_tries" => 3,
-    }
-
-    settings = defaults.dup
-
-    traceroute('8.8.8.8', settings)
+    traceroute(target, settings)
   end
 end
 
