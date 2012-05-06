@@ -236,9 +236,18 @@ module Handler
     end
 
     ttl = hop.ttl + 1
+    tail = @hops.last(2)
+    if  tail.size == 2 && tail.first.remote_ip == ip ||
+        (ttl > (@settings.fetch("max_hops", 30) + 1))
+      done = true
+    else
+      done = false
+    end
 
-    if cb = @settings.fetch("hop_callback")
-      cb.call(hop)
+    unless done
+      if cb = @settings.fetch("hop_callback")
+        cb.call(hop)
+      end
     end
 
     if @target == hop.remote_ip.src
@@ -294,6 +303,7 @@ def main
     "hop_callback" => lambda {|hop| puts hop },
     "timeout" => 2,
     "max_tries" => 3,
+    "max_hops" => 30
   }
 
   opts = {}
@@ -307,7 +317,11 @@ def main
     opts["tries"] = v.to_i
   end
 
-  config.on("silent") do
+  config.on("-m VAL", "--max_hops VAL") do |v|
+    opts["max_hops"] = v.to_i
+  end
+
+  config.on("-s", "--silent") do
     opts["silent"] = nil
   end
 
@@ -331,6 +345,10 @@ def main
 
   if opts.include?("tries")
     settings["max_tries"] = opts["tries"]
+  end
+
+  if opts.include?("max_hops")
+    settings["max_hops"] = opts["max_hops"]
   end
 
   if opts.include?("silent")
