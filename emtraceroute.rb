@@ -155,6 +155,7 @@ end
 
 
 module Handler
+  attr_reader :deferred
   def initialize target, settings
     @target = target
     @settings = settings
@@ -164,6 +165,8 @@ module Handler
     @hops = []
     @out_queue = []
     @waiting = true
+
+    @deferred = EM::DefaultDeferrable.new
 
     # send first probe packet
     @out_queue << Hop.new(@target, 1)
@@ -236,16 +239,22 @@ module Handler
 
     ttl = hop.ttl + 1
 
-    puts hop
+    if cb = @settings.fetch("hop_callback")
+      cb.call(hop)
+    end
 
     if @target == hop.remote_ip.src
       unbind
     end
 
-    if @waiting
-      @out_queue << Hop.new(@target, ttl.to_i)
+    unless @waiting
+      if @deferred
+        @deferred.set_deferred_status :succeeded, @hops
+        @deferred = nil
+      end
+    else
+      @out_queue << Hop.new(@target, ttl.inspect.to_i)
     end
-
   rescue
     detach
   end
@@ -266,6 +275,7 @@ end
 
 
 class TracerouteProtocol
+  attr_reader :deferred
   def initialize(target, settings={})
     fd = Socket.new(Socket::AF_INET, Socket::SOCK_RAW, Socket::IPPROTO_ICMP)
     fd.setsockopt(Socket::IPPROTO_IP, Socket::IP_HDRINCL, 1)
@@ -274,6 +284,7 @@ class TracerouteProtocol
 
     conn.notify_readable = true
     conn.notify_writable = true
+    @deferred = conn.deferred
   end
 end
 
@@ -289,6 +300,7 @@ def main
   end
 
   defaults = {
+    "hop_callback" => lambda {|hop| puts hop },
     "timeout" => 2,
     "max_tries" => 3,
   }
@@ -302,6 +314,10 @@ def main
 
   config.on("-r VAL", "--tries VAL") do |v|
     opts["tries"] = v.to_i
+  end
+
+  config.on("silent") do
+    opts["silent"] = nil
   end
 
   config.parse!(ARGV)
@@ -326,8 +342,21 @@ def main
     settings["max_tries"] = opts["tries"]
   end
 
+  if opts.include?("silent")
+    settings["hop_callback"] = opts["silent"]
+    tr = nil
+  end
+
   EM.run do
-    traceroute(target, settings)
+    tr = traceroute(target, settings)
+  end
+
+  unless settings["hop_callback"]
+    tr.deferred.instance_eval do
+      @deferred_args.first.each do |hop|
+        puts hop
+      end
+    end
   end
 end
 
