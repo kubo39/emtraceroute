@@ -110,7 +110,7 @@ end
 class Hop
   attr_accessor :found, :tries, :remote_ip, :remote_icmp,
   :ttl, :ip, :pkt, :icmp
-  def initialize(target, ttl)
+  def initialize target, ttl
     @found = false
     @tries = 0
     @last_try = 0
@@ -173,9 +173,7 @@ module Handler
   end
 
   def notify_readable
-    if !@waiting || @hops.empty?
-      return
-    end
+    return if !@waiting || @hops.empty?
 
     pkt = @io.recv(4096)
 
@@ -274,22 +272,15 @@ module Handler
 end
 
 
-class TracerouteProtocol
-  attr_reader :deferred
-  def initialize(target, settings={})
-    fd = Socket.new(Socket::AF_INET, Socket::SOCK_RAW, Socket::IPPROTO_ICMP)
-    fd.setsockopt(Socket::IPPROTO_IP, Socket::IP_HDRINCL, 1)
-
-    conn = EM.watch(fd, Handler, target, settings)
-
-    conn.notify_readable = true
-    conn.notify_writable = true
-    @deferred = conn.deferred
-  end
-end
-
 def traceroute target, settings
-  tr = TracerouteProtocol.new(target, settings)
+  fd = Socket.new(Socket::AF_INET, Socket::SOCK_RAW, Socket::IPPROTO_ICMP)
+  fd.setsockopt(Socket::IPPROTO_IP, Socket::IP_HDRINCL, 1)
+
+  conn = EM.watch(fd, Handler, target, settings)
+
+  conn.notify_readable = true
+  conn.notify_writable = true
+  conn.deferred
 end
 
 
@@ -352,7 +343,7 @@ def main
   end
 
   unless settings["hop_callback"]
-    tr.deferred.instance_eval do
+    tr.instance_eval do
       @deferred_args.first.each do |hop|
         puts hop
       end
