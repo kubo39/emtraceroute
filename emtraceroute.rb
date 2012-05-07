@@ -132,7 +132,7 @@ class Hop
 
   def pkt
     @tries += 1
-    @last_try = Time.now.to_i
+    @last_try = Time.now.to_f
     @pkt
   end
 
