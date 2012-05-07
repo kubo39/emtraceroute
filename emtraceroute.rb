@@ -355,6 +355,13 @@ def main
     tr = nil
   end
 
+  begin
+    target = IPSocket.getaddress(target)
+  rescue Exception => ex
+    puts "Couldn't resolve #{target}: #{ex}"
+    exit(1)
+  end
+
   EM.run do
     tr = traceroute(target, settings)
   end
