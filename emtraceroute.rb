@@ -224,7 +224,6 @@ module Handler
   end
 
   def unbind
-    EM.stop
   end
 
   def hop_found(hop, ip, icmp)
@@ -251,7 +250,7 @@ module Handler
     end
 
     if @target == hop.remote_ip.src
-      unbind
+      EM.stop
     end
 
     unless @waiting
@@ -260,7 +259,7 @@ module Handler
         @deferred = nil
       end
     else
-      @out_queue << Hop.new(@target, ttl.inspect.to_i)
+      @out_queue << Hop.new(@target, ttl)
     end
   rescue
     detach
