@@ -143,7 +143,7 @@ class Hop
       else
         ip = ":: #{remote_ip.src}"
       end
-      ping = "#{@found - @last_try}"
+      ping = "#{(@found - @last_try).round(3)}s"
     else
       ip = "??"
       ping = "-"
@@ -231,7 +231,7 @@ module Handler
     hop.remote_icmp = icmp
 
     if ip && icmp
-      hop.found = Time.now.to_i
+      hop.found = Time.now.to_f
     end
 
     ttl = hop.ttl + 1
