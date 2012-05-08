@@ -5,6 +5,7 @@ require 'socket'
 require 'eventmachine'
 require 'optparse'
 
+
 # extension for socket library
 class Socket
   # ip address format to network byte order.
@@ -22,6 +23,7 @@ class Socket
     return [id].pack("s").unpack("n").first.to_i
   end
 end
+
 
 class Iphdr
   attr_accessor :version, :hlen, :tos, :id, :length, :frag,
@@ -116,7 +118,6 @@ class Hop
     @last_try = 0
     @remote_ip = nil
     @remote_icmp = nil
-    @remote_host = nil
 
     @ttl = ttl
     @ip = Iphdr.new(Socket::IPPROTO_ICMP, '0.0.0.0', target) # IP header
@@ -138,11 +139,7 @@ class Hop
 
   def to_s
     if @found
-      if @remote_host
-        ip = ":: #{@remote_host}"
-      else
-        ip = ":: #{remote_ip.src}"
-      end
+      ip = ":: #{remote_ip.src}"
       ping = "#{(@found - @last_try).round(3)}s"
     else
       ip = "??"
@@ -374,6 +371,7 @@ def main
     end
   end
 end
+
 
 if __FILE__ == $0
   main
