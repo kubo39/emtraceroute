@@ -246,15 +246,12 @@ module Handler
       end
     end
 
-    if @target == hop.remote_ip.src
-      EM.stop
-    end
-
     unless @waiting
       if @deferred
         @deferred.set_deferred_status :succeeded, @hops
         @deferred = nil
       end
+      EM.stop
     else
       @out_queue << Hop.new(@target, ttl)
     end
