@@ -282,13 +282,16 @@ def traceroute target, settings
 
   conn.notify_readable = true
   conn.notify_writable = true
-  conn.deferred
+
+  unless settings["hop_callback"]
+    conn.deferred.callback {|hop| puts hop }
+  end
 end
 
 
 def main
   if Process.uid != 0
-    puts("traceroute needs root privileges for the raw socket")
+    puts "traceroute needs root privileges for the raw socket"
     exit(1)
   end
 
@@ -346,7 +349,6 @@ def main
 
   if opts.include?("silent")
     settings["hop_callback"] = opts["silent"]
-    tr = nil
   end
 
   begin
@@ -357,15 +359,7 @@ def main
   end
 
   EM.run do
-    tr = traceroute(target, settings)
-  end
-
-  unless settings["hop_callback"]
-    tr.instance_eval do
-      @deferred_args.first.each do |hop|
-        puts hop
-      end
-    end
+    traceroute(target, settings)
   end
 end
 
