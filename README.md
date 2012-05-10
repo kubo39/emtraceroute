@@ -7,7 +7,6 @@ emtraceroute
 This is how it works:
 
         $ sudo ruby emtraceroute.rb '8.8.8.8'
-
         1, 0.004s, :: 192.168.x.x
         2, 0.008s, :: 118.23.x.x
         3, 0.008s, :: 118.23.x.x
@@ -25,10 +24,10 @@ This is how it works:
 
 - options:
 
--t, --timeoute: hop timeout seconds.
+-t, --timeout: hop timeout seconds.
 
 -r, --tries: retry counts.
 
 -m, --max_hops: max size of traceroute hops.
 
--s, -silent: only show results at rhe end.
+-s, -silent: only show results at the end.
