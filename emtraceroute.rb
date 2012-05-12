@@ -5,6 +5,9 @@ require 'socket'
 require 'eventmachine'
 require 'optparse'
 
+# version
+Version = '0.0.1'
+
 
 # extension for socket library
 class Socket
