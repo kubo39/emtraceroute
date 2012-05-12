@@ -305,6 +305,12 @@ def main
     "max_hops" => 30
   }
 
+  if ARGV.size < 1
+    puts "Usage: #{$0} [options]"
+    puts "#{$0}: Try --help for usage details."
+    exit
+  end
+
   opts = {}
 
   config = OptionParser.new
