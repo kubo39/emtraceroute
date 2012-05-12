@@ -309,15 +309,15 @@ def main
 
   config = OptionParser.new
 
-  config.on("-t VAL", "--timeout=VAL") do |v|
+  config.on("-t [VAL]", "--timeout [VAL]") do |v|
     opts["timeout"] = v.to_i
   end
 
-  config.on("-r VAL", "--tries=VAL") do |v|
+  config.on("-r [VAL]", "--tries [VAL]") do |v|
     opts["tries"] = v.to_i
   end
 
-  config.on("-m VAL", "--max_hops=VAL") do |v|
+  config.on("-m [VAL]", "--max_hops [VAL]") do |v|
     opts["max_hops"] = v.to_i
   end
 
