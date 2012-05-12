@@ -146,7 +146,7 @@ class Hop
       ping = "-"
     end
 
-    return "#{@ttl}, #{ping}, #{ip}"
+    return "#{@ttl}. #{ping} #{ip}"
   end
 end
 
