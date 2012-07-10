@@ -6,24 +6,21 @@ require 'eventmachine'
 require 'optparse'
 
 # version
-Version = '0.0.1'
+Version = '0.0.1a'
 
 
 # extension for socket library
 class Socket
-  # ip address format to network byte order.
   def self.inet_aton ip
-    return ip.split(/\./).map(&:to_i).pack("C*")
+    ip.split(/\./).map(&:to_i).pack("C*")
   end
 
-  # network byte order to ip address format.
   def self.inet_ntoa n
-    return n.unpack("C*").join "."
+    n.unpack("C*").join "."
   end
 
-  # host (unsigned char) byte order to network byte order.
   def self.htons id
-    return [id].pack("s").unpack("n").first.to_i
+    [id].pack("s").unpack("n").first.to_i
   end
 end
 
@@ -32,20 +29,20 @@ class Iphdr
   attr_accessor :version, :hlen, :tos, :id, :length, :frag,
    :ttl, :dst, :proto, :cksum, :src, :saddr, :daddr, :data
   def initialize(proto=Socket::IPPROTO_ICMP, src='0.0.0.0', dst=nil)
-    @version = 4                    # バージョン番号
-    @hlen = 5                       # ヘッダー長
-    @tos = 0                        # サービス識別（優先順位や遅延を表す）
-    @length = 20                    # IPデータグラム全体のバイト数
-    @id = $$                        # 識別子(シーケンス番号)
-    @frag = 0                       # フラグ(どのように配送するかの値)
-    @ttl = 255                      # 最大ゲートウェイ数(通過可能なルータの数)
-    @proto = proto                  # プロトコルの種類
-    @cksum = 0                      # IPヘッダチェックサム(データの正しさを検証)
-    @src = src                      # 送信元アドレス
-    @saddr = Socket.inet_aton(src)  # 送信元IPアドレス
-    @dst = dst || '0.0.0.0'         # 送信先アドレス
-    @daddr = Socket.inet_aton(@dst) # 送信先IPアドレス
-    @data = ''                      # データ部
+    @version = 4
+    @hlen = 5
+    @tos = 0
+    @length = 20
+    @id = $$
+    @frag = 0
+    @ttl = 255
+    @proto = proto
+    @cksum = 0
+    @src = src
+    @saddr = Socket.inet_aton(src)
+    @dst = dst || '0.0.0.0'
+    @daddr = Socket.inet_aton(@dst)
+    @data = ''
   end
 
   def assemble
@@ -54,7 +51,7 @@ class Iphdr
               Socket.htons(@id), @frag,
               @ttl, @proto
              ].pack('CCSSSCC')
-    return header + "\000\000" + @saddr.to_s + @daddr.to_s + @data
+    header + "\000\000" + @saddr.to_s + @daddr.to_s + @data
   end
 
   def self.disassemble data
@@ -67,21 +64,20 @@ class Iphdr
     ip.daddr = data[16..19]
     ip.src = Socket.inet_ntoa(ip.saddr)
     ip.dst = Socket.inet_ntoa(ip.daddr)
-    return ip
+    ip
   end
 end
 
 
-# ICMP header を表すクラス
 class Icmphdr
   attr_accessor :type, :code, :cksum, :id, :sequence, :data
   def initialize data=""
-    @type = 8      # ICMPメッセージの種類(8はエコー要求)
-    @code = 0      # コード(ここでは特に意味なし。穴埋め。)
-    @cksum = 0     # ICMPメッセージ全体に対するチェックサム
-    @id = $$       # 識別子
-    @sequence = 0  # シーケンス番号(どの要求に対する応答かを判定)
-    @data = data   # データ部
+    @type = 8
+    @code = 0
+    @cksum = 0
+    @id = $$
+    @sequence = 0
+    @data = data
   end
 
   def assemble
@@ -89,25 +85,24 @@ class Icmphdr
     part2 = [@id, @sequence].pack('n*')
     cksum = Icmphdr.checksum(part1 + "\000\000" + part2 + @data)
     cksum = [cksum].pack('n')
-    return part1 + cksum + part2 + @data
+    part1 + cksum + part2 + @data
   end
 
   def self.checksum data
-    if data.size & 1 == 1
-      data += '\0'
-    end
+    data += '\0' if data.size & 1 == 1
+
     cksum = data.unpack("n*")[0..(data.size >> 1)].inject(&:+)
     cksum = (cksum >> 16) + (cksum & 0xffff)
     cksum += (cksum >> 16)
     cksum = (cksum & 0xffff) ^ 0xffff
-    return cksum
+    cksum
   end
 
   def self.disassemble data
     icmp = Icmphdr.new
     pkt = data.unpack('CCnnn')
     icmp.type, icmp.code, icmp.cksum, icmp.id, icmp.sequence = pkt
-    return icmp
+    icmp
   end
 end
 
@@ -149,7 +144,7 @@ class Hop
       ping = "-"
     end
 
-    return "#{@ttl}. #{ping} #{ip}"
+    "#{@ttl}. #{ping} #{ip}"
   end
 end
 
@@ -190,18 +185,12 @@ module Handler
       elsif icmp.type == 11
         # disassemble referenced ip header
         ref = Iphdr.disassemble(pkt[28..47])
-        if ref.dst == @target
-          found = true
-        end
+        found = true if ref.dst == @target
       end
 
-      if ip.src == @target
-        @waiting = false
-      end
+      @waiting = false if ip.src == @target
 
-      if found
-        hop_found(@hops.last, ip, icmp)
-      end
+      hop_found(@hops.last, ip, icmp) if found
     end
   end
 
@@ -217,9 +206,7 @@ module Handler
       @io.send(pkt, 0, sockaddr)
 
       timeout = @settings.fetch('timeout')
-      EM.add_timer(timeout) do
-        hop_timeout
-      end
+      EM.add_timer(timeout) { hop_timeout }
     end
   end
 
@@ -230,9 +217,7 @@ module Handler
     hop.remote_ip = ip
     hop.remote_icmp = icmp
 
-    if ip && icmp
-      hop.found = Time.now.to_f
-    end
+    hop.found = Time.now.to_f if ip && icmp
 
     ttl = hop.ttl + 1
     tail = @hops.last(2)
@@ -315,21 +300,10 @@ def main
 
   config = OptionParser.new
 
-  config.on("-t [VAL]", "--timeout [VAL]") do |v|
-    opts["timeout"] = v.to_i
-  end
-
-  config.on("-r [VAL]", "--tries [VAL]") do |v|
-    opts["tries"] = v.to_i
-  end
-
-  config.on("-m [VAL]", "--max_hops [VAL]") do |v|
-    opts["max_hops"] = v.to_i
-  end
-
-  config.on("-s", "--silent") do
-    opts["silent"] = nil
-  end
+  config.on("-t [VAL]", "--timeout [VAL]") {|v| opts["timeout"] = v.to_i }
+  config.on("-r [VAL]", "--tries [VAL]") {|v| opts["tries"] = v.to_i }
+  config.on("-m [VAL]", "--max_hops [VAL]") {|v| opts["max_hops"] = v.to_i }
+  config.on("-s", "--silent") { opts["silent"] = nil }
 
   config.parse!(ARGV)
   target = ARGV.last[0] != "-" ? ARGV.pop : nil
@@ -345,21 +319,11 @@ def main
 
   settings = defaults.dup
 
-  if opts.include?("timeout")
-    settings["timeout"] = opts["timeout"]
-  end
-
-  if opts.include?("tries")
-    settings["max_tries"] = opts["tries"]
-  end
-
-  if opts.include?("max_hops")
-    settings["max_hops"] = opts["max_hops"]
-  end
-
-  if opts.include?("silent")
-    settings["hop_callback"] = opts["silent"]
-  end
+  
+  settings["timeout"] = opts["timeout"] if opts.include? "timeout"
+  settings["max_tries"] = opts["tries"] if opts.include? "tries"
+  settings["max_hops"] = opts["max_hops"] if opts.include? "max_hops"
+  settings["hop_callback"] = opts["silent"] if opts.include? "silent"
 
   begin
     target = IPSocket.getaddress(target)
@@ -368,9 +332,7 @@ def main
     exit(1)
   end
 
-  EM.run do
-    traceroute(target, settings)
-  end
+  EM.run { traceroute(target, settings) }
 end
 
 
