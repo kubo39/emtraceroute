@@ -109,27 +109,6 @@ class Icmphdr
 end
 
 
-def geoip_lookup ip
-  url = "http://freegeoip.net/json/#{ip}"
-
-  http = EM::HttpRequest.new(url).get :timeout => 5
-  
-  http.callback {
-    STDERR.puts "hoge"
-    d = JSON.parse http.response
-
-    hop.location =
-    [d["country_name"], d["region_name"], d["city"]].select do |s|
-      s && !(s.empty?)
-    end.join(", ").encode("utf-8")
-  }
-  http.errback {
-    EM.stop
-  }
-#  http
-end
-
-
 class Hop
   attr_accessor :found, :tries, :remote_ip, :remote_icmp, :location,
   :ttl, :ip, :pkt, :icmp
