@@ -3,6 +3,8 @@
 require 'rubygems'
 require 'socket'
 require 'eventmachine'
+require 'open-uri'
+require 'json'
 require 'optparse'
 
 # version
@@ -107,8 +109,29 @@ class Icmphdr
 end
 
 
+def geoip_lookup ip
+  url = "http://freegeoip.net/json/#{ip}"
+
+  http = EM::HttpRequest.new(url).get :timeout => 5
+  
+  http.callback {
+    STDERR.puts "hoge"
+    d = JSON.parse http.response
+
+    hop.location =
+    [d["country_name"], d["region_name"], d["city"]].select do |s|
+      s && !(s.empty?)
+    end.join(", ").encode("utf-8")
+  }
+  http.errback {
+    EM.stop
+  }
+#  http
+end
+
+
 class Hop
-  attr_accessor :found, :tries, :remote_ip, :remote_icmp,
+  attr_accessor :found, :tries, :remote_ip, :remote_icmp, :location,
   :ttl, :ip, :pkt, :icmp
   def initialize target, ttl
     @found = false
@@ -116,6 +139,7 @@ class Hop
     @last_try = 0
     @remote_ip = nil
     @remote_icmp = nil
+    @location = ""
 
     @ttl = ttl
     @ip = Iphdr.new(Socket::IPPROTO_ICMP, '0.0.0.0', target) # IP header
@@ -144,7 +168,8 @@ class Hop
       ping = "-"
     end
 
-    "#{@ttl}. #{ping} #{ip}"
+    location = ":: #{@location}" 
+    "#{@ttl}. #{ping} #{ip} #{location}"
   end
 end
 
@@ -217,7 +242,21 @@ module Handler
     hop.remote_ip = ip
     hop.remote_icmp = icmp
 
-    hop.found = Time.now.to_f if ip && icmp
+    if ip && icmp
+      hop.found = Time.now.to_f
+
+      if @settings.fetch "geoip_lookup"
+
+        url = "http://freegeoip.net/json/#{ip.src}"
+
+        page = open(url).read
+        d = JSON.load page
+      
+        hop.location = [d["country_name"], d["region_name"], d["city"]].select do |s|
+          s && !(s.empty?)
+        end.join(", ").encode("utf-8")
+      end
+    end
 
     ttl = hop.ttl + 1
     tail = @hops.last(2)
@@ -287,7 +326,8 @@ def main
     "hop_callback" => lambda {|hop| puts hop },
     "timeout" => 2,
     "max_tries" => 3,
-    "max_hops" => 30
+    "max_hops" => 30,
+    "geoip_lookup" => true
   }
 
   if ARGV.size < 1
@@ -304,6 +344,7 @@ def main
   config.on("-r [VAL]", "--tries [VAL]") {|v| opts["tries"] = v.to_i }
   config.on("-m [VAL]", "--max_hops [VAL]") {|v| opts["max_hops"] = v.to_i }
   config.on("-s", "--silent") { opts["silent"] = nil }
+  config.on("-g", "--no-geoip") { opts["geoip_lookup"] = false }
 
   config.parse!(ARGV)
   target = ARGV.last[0] != "-" ? ARGV.pop : nil
@@ -324,6 +365,7 @@ def main
   settings["max_tries"] = opts["tries"] if opts.include? "tries"
   settings["max_hops"] = opts["max_hops"] if opts.include? "max_hops"
   settings["hop_callback"] = opts["silent"] if opts.include? "silent"
+  settings["geoip_lookup"] = opts["geoip_lookup"] if opts.include? "geoip_lookup"
 
   begin
     target = IPSocket.getaddress(target)
