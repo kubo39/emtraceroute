@@ -28,6 +28,11 @@ end
 
 
 class Iphdr
+  # This represents an IP packet header.
+  #
+  # Iphdr#assemble packages the packet
+  # Iphdr.disassemble disassembles the packet
+  #
   attr_accessor :version, :hlen, :tos, :id, :length, :frag,
    :ttl, :dst, :proto, :cksum, :src, :saddr, :daddr, :data
   def initialize(proto=Socket::IPPROTO_ICMP, src='0.0.0.0', dst=nil)
@@ -230,7 +235,7 @@ module Handler
 
         page = open(url).read
         d = JSON.load page
-      
+
         hop.location = [d["country_name"], d["region_name"], d["city"]].select do |s|
           s && !(s.empty?)
         end.join(", ").encode("utf-8")
@@ -247,7 +252,7 @@ module Handler
     end
 
     unless done
-      if cb = @settings.fetch("hop_callback")
+      if(cb = @settings.fetch "hop_callback")
         cb.call(hop)
       end
     end
