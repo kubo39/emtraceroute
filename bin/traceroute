@@ -1,0 +1,63 @@
+#!/usr/bin/env ruby
+require '../lib/emtraceroute'
+require 'optparse'
+
+if Process.uid != 0
+  puts "traceroute needs root privileges for the raw socket"
+  exit(1)
+end
+
+defaults = {
+  "hop_callback" => lambda {|hop| puts hop },
+  "timeout" => 2,
+  "max_tries" => 3,
+  "max_hops" => 30,
+  "geoip_lookup" => true
+}
+
+if ARGV.size < 1
+  puts "Usage: #{$0} [options]"
+  puts "#{$0}: Try --help for usage details."
+  exit
+end
+
+opts = {}
+
+config = OptionParser.new
+
+config.on("-t [VAL]", "--timeout [VAL]") {|v| opts["timeout"] = v.to_i }
+config.on("-r [VAL]", "--tries [VAL]") {|v| opts["tries"] = v.to_i }
+config.on("-m [VAL]", "--max_hops [VAL]") {|v| opts["max_hops"] = v.to_i }
+config.on("-s", "--silent") { opts["silent"] = nil }
+config.on("-g", "--no-geoip") { opts["geoip_lookup"] = false }
+
+config.parse!(ARGV)
+target = ARGV.last[0] != "-" ? ARGV.pop : nil
+
+begin
+  unless target
+    raise OptionParser::InvalidArgument
+  end
+rescue => ex
+  puts ex.message
+  exit(1)
+end
+
+settings = defaults.dup
+
+settings["timeout"] = opts["timeout"] if opts.include? "timeout"
+settings["max_tries"] = opts["tries"] if opts.include? "tries"
+settings["max_hops"] = opts["max_hops"] if opts.include? "max_hops"
+settings["hop_callback"] = opts["silent"] if opts.include? "silent"
+settings["geoip_lookup"] = opts["geoip_lookup"] if opts.include? "geoip_lookup"
+
+begin
+  target = IPSocket.getaddress(target)
+rescue Exception => ex
+  puts "Couldn't resolve #{target}: #{ex}"
+  exit(1)
+end
+
+EM.run { EM::Traceroute.start_trace(target, settings) }
+
+# EM::Traceroute::CLI.start
