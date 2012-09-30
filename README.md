@@ -4,9 +4,9 @@ emtraceroute
 
 - This traceroute is based on eventmachine.
 
-This is how it works:
+## This is how it works
 
-    $ sudo ruby emtraceroute.rb 'google.co.jp'
+    $ sudo emtraceroute 'google.co.jp'
     1. 0.004s :: 192.168.X.XXX :: Reserved
     2. 0.008s :: 118.23.XX.XXX :: Japan
     3. 0.007s :: 118.23.XX.XXX :: Japan
@@ -20,7 +20,21 @@ This is how it works:
     11. 0.01s :: 209.85.XXX.XXX :: United States, California, Mountain View
     12. 0.011s :: 173.194.XX.XX :: United States, California, Mountain View
 
-- options:
+## How to install
+
+first, clone from github
+
+    git clone https://github.com/kubo39/emtraceroute.git
+
+second, build gemspec
+
+    gem build emtraceroute.gemspec
+
+third, gem install
+
+    sudo gem install emtraceroute --local
+
+## options
 
 -t, --timeout: hop timeout seconds.
 
