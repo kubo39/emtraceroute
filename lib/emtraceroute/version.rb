@@ -1,3 +1,5 @@
-module EM::Traceroute
-  VERSION = '0.0.1a'
+module EM
+  module Traceroute
+    VERSION = '0.0.1a'
+  end
 end
