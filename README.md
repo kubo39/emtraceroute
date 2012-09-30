@@ -6,7 +6,7 @@ emtraceroute
 
 ## This is how it works
 
-    $ sudo emtraceroute 'google.co.jp'
+    $ sudo traceroute 'google.co.jp'
     1. 0.004s :: 192.168.X.XXX :: Reserved
     2. 0.008s :: 118.23.XX.XXX :: Japan
     3. 0.007s :: 118.23.XX.XXX :: Japan
