@@ -59,5 +59,3 @@ rescue Exception => ex
 end
 
 EM.run { EM::Traceroute.start_trace(target, settings) }
-
-# EM::Traceroute::CLI.start
