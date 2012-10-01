@@ -22,6 +22,12 @@ emtraceroute
 
 ## How to install
 
+It's easy!
+
+    sudo gem install emtraceroute
+
+#### or
+
 first, clone from github
 
     git clone https://github.com/kubo39/emtraceroute.git
