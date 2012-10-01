@@ -51,3 +51,7 @@ third, gem install
 -s, --silent: only show results at the end.
 
 -g, --no-geoip: not display geoip location.
+
+## LICENSE
+
+see LICENSE.txt
